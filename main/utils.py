@@ -10,25 +10,25 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 
 def make_data():
-	all_filenames = glob.glob('../crawler/data/*.csv')
+	all_filenames = glob.glob('./crawler/data/*.csv')
 	#combine all files in the list
 	combined_csv = pd.concat([pd.read_csv(f) for f in all_filenames ],ignore_index = True)
 	#export to csv
-	combined_csv.to_csv( "../crawler/total.csv")
+	combined_csv.to_csv( "./crawler/total.csv")
 
 
 def split_data(paths,targets):
-	X_train, X_test, y_train, y_test = model_selection.train_test_split(paths, targets, test_size=0.2, random_state=1)
-	X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, random_state=1) # 0.25 x 0.8 = 0.2
+	X_train, X_test, y_train, y_test = model_selection.train_test_split(paths, targets, test_size=0.1, random_state=1)
+	X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.1, random_state=1) # 0.25 x 0.8 = 0.2
 	return X_train,y_train,X_val,y_val,X_test,y_test
 
 
 MAX_LEN = 125
 
-rdrsegmenter = VnCoreNLP("transformers/vncorenlp/VnCoreNLP-1.1.1.jar", annotators="wseg", max_heap_size='-Xmx500m') 
+rdr_segmenter = VnCoreNLP("./main/transformers/vncorenlp/VnCoreNLP-1.1.1.jar", annotators="wseg", max_heap_size='-Xmx500m') 
 parser = argparse.ArgumentParser()
 parser.add_argument('--bpe-codes', 
-    default="transformers/PhoBERT_base_transformers/bpe.codes",
+    default="./main/transformers/PhoBERT_base_transformers/bpe.codes",
     required=False,
     type=str,
     help='path to fastBPE BPE'
@@ -38,17 +38,17 @@ bpe = fastBPE(args)
 
 # Load the dictionary
 vocab = Dictionary()
-vocab.add_from_file("transformers/PhoBERT_base_transformers/dict.txt")
+vocab.add_from_file("./main/transformers/PhoBERT_base_transformers/dict.txt")
 
 
-def get_data(data_path = "../crawler/total.csv"):
+def get_data(data_path = "./crawler/total.csv"):
 	df = pd.read_csv(data_path)
 	# df = df[['text','star']]
 	# data = df.values.tolist()
 	texts = df['text'].tolist()
 	encode_text = []
 	for text in texts:
-		text = bpe.encode(' '.join(rdrsegmenter.tokenize(text)[0]))
+		text = bpe.encode(' '.join(rdr_segmenter.tokenize(text)[0]))
 		encode_ = vocab.encode_line('<s> ' + text + ' </s>',append_eos=True, add_if_not_exist=False).long().tolist()
 		encode_text.append(encode_)
 	stars= df['star'].tolist()  

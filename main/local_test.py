@@ -1,5 +1,5 @@
 from dataloader import test_dataloader,get_mask
-from train import flat_accuracy
+from sklearn.metrics import f1_score, accuracy_score
 from transformers import RobertaForSequenceClassification, RobertaConfig
 import numpy as np 
 import torch
@@ -9,17 +9,24 @@ from torch.utils.data import TensorDataset, DataLoader, RandomSampler, Sequentia
 
 
 config = RobertaConfig.from_pretrained(
-    "transformers/PhoBERT_base_transformers/config.json", from_tf=False, num_labels = 6, output_hidden_states=False,
+    "./main/transformers/PhoBERT_base_transformers/config.json", from_tf=False, num_labels = 6, output_hidden_states=False,
 )
 BERT_SA = RobertaForSequenceClassification.from_pretrained(
-    "transformers/PhoBERT_base_transformers/model.bin",
+    "./main/model.bin",
     config=config
 )
 
 device = 'cpu'
-BERT_SA.load_state_dict(torch.load('model.pth',map_location='cpu'))
+# BERT_SA.load_state_dict(torch.load('model.pth',map_location='cpu'))
+BERT_SA.to(device)
 BERT_SA.eval()
-
+def flat_accuracy(preds, labels):
+    pred_flat = np.argmax(preds, axis=1).flatten()
+    labels_flat = labels.flatten()
+    
+    F1_score = f1_score(pred_flat, labels_flat, average='macro')
+    
+    return accuracy_score(pred_flat, labels_flat), F1_score
 
 def test(test_loader):
     print("Running Validation...")
@@ -51,7 +58,7 @@ def predict(text):
   #test(test_dataloader)
   # while True:
   #   text = input("Nhập:")
-  text = bpe.encode(' '.join(rdrsegmenter.tokenize(text)[0]))
+  text = bpe.encode(' '.join(rdr_segmenter.tokenize(text)[0]))
   encode_ = vocab.encode_line('<s> ' + text + ' </s>',append_eos=True, add_if_not_exist=False).long().tolist()
   encode_text = pad_sequences([encode_], maxlen=MAX_LEN, dtype="long", value=0, truncating="post", padding="post")
 
@@ -77,7 +84,7 @@ def predict(text):
     elif predict == 2:
       te = "Chán"
     elif predict == 1:
-      te = "Tệ v"
+      te = "Tệ"
     return te
 
 
